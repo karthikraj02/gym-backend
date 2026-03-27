@@ -9,6 +9,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ─── MongoDB connection (cached for serverless) ───
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected) return;
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    isConnected = true;
+    console.log('⚡ MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    throw err;
+  }
+}
+
+// Connect to DB before every request (for Vercel serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
+
 // ─── Routes ───
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/passes', require('./routes/passes'));
@@ -27,23 +52,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error', error: err.message });
 });
 
-// ─── Connect DB & Start ───
+// ─── Start locally (not on Vercel) ───
 const PORT = process.env.PORT || 5000;
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('⚡ MongoDB connected');
-    if (!process.env.VERCEL) {
-      app.listen(PORT, () => {
-        console.log(`🔥 Vajra server running on port ${PORT}`);
-      });
-    }
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
+if (!process.env.VERCEL) {
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`🔥 Vajra server running on port ${PORT}`);
+    });
   });
+}
 
 module.exports = app;
-
