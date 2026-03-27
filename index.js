@@ -34,11 +34,16 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log('⚡ MongoDB connected');
-    app.listen(PORT, () => {
-      console.log(`🔥 Vajra server running on port ${PORT}`);
-    });
+    if (!process.env.VERCEL) {
+      app.listen(PORT, () => {
+        console.log(`🔥 Vajra server running on port ${PORT}`);
+      });
+    }
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   });
+
+module.exports = app;
+
