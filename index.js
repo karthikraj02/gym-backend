@@ -77,6 +77,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'VAJRA SYSTEMS OPERATIONAL', timestamp: new Date() });
 });
 
+// Root route to prevent 404 on base URL
+app.get('/', (req, res) => {
+    res.send('Vajra Gym Backend API is running. Access endpoints at /api/*');
+});
+
 // ─── Error handler ───
 app.use((err, req, res, next) => {
     console.error('Server error:', err.message);
